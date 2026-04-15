@@ -80,8 +80,8 @@ db.serialize(() => {
       description text,
       owner_id integer,
       created_at datetime default current_timestamp,
-      foreign key(owner_id) references users(id) on delete cascade,
-      is_private integer default 0
+      is_private integer default 0,
+      foreign key(owner_id) references users(id) on delete cascade
     )
   `);
   
