@@ -6,6 +6,10 @@ import Home from "./pages/Home";
 import ChangePassword from "./pages/ChangePassword";
 import ProtectedRoute from "./components/ProtectedRoute";
 
+import Posts from "./pages/Posts";
+import Messages from "./pages/Messages";
+import Friends from "./pages/Friends";
+import Groups from "./pages/Groups";
 
 export default function App() {
   return (
@@ -13,17 +17,48 @@ export default function App() {
       <Route path="/" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/reset-password" element={<ResetPassword />} />
-      <Route path="/users" element={<div>Users Page</div>} />
-      <Route path="/posts" element={<div>Posts Page</div>} />
-      <Route path="/messages" element={<div>Messages Page</div>} />
-      <Route path="/friends" element={<div>Friendships Page</div>} />
-      <Route path="/groups" element={<div>Groups Page</div>} />
 
       <Route
         path="/home"
         element={
           <ProtectedRoute>
             <Home />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/posts"
+        element={
+          <ProtectedRoute>
+            <Posts />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/messages"
+        element={
+          <ProtectedRoute>
+            <Messages />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/friends"
+        element={
+          <ProtectedRoute>
+            <Friends />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/groups"
+        element={
+          <ProtectedRoute>
+            <Groups />
           </ProtectedRoute>
         }
       />
@@ -36,12 +71,8 @@ export default function App() {
           </ProtectedRoute>
         }
       />
-      <Route
-        path="*" 
-        element={
-          <div>404 - Page not found</div>
-        }
-      />
+
+      <Route path="*" element={<div>404 - Page not found</div>} />
     </Routes>
   );
 }

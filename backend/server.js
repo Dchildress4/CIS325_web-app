@@ -3,34 +3,32 @@ import cors from "cors";
 import bcrypt from "bcrypt";
 import db from "./db.js";
 import jwt from "jsonwebtoken";
-import dotenv from "dotenv";
-
-dotenv.config();
-
-const JWT_SECRET = "super_secret_key";
 
 const app = express();
+const PORT = 3000;
+const JWT_SECRET = "super_secret_key";
+
+app.use(cors({ origin: "http://localhost:5173" }));
+app.use(express.json());
 
 function authenticateToken(req, res, next) {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
+  const authHeader = req.headers.authorization;
+  const token = authHeader?.split(" ")[1];
 
-  if (!token) return res.sendStatus(401);
+  if (!token) {
+    return res.sendStatus(401);
+  }
 
   jwt.verify(token, JWT_SECRET, (err, user) => {
     if (err) {
       return res.sendStatus(403);
     }
-    
+
     req.user = user;
     next();
   });
 }
 
-const PORT = 3000;
-
-app.use(cors({ origin: "http://localhost:5173" }));
-app.use(express.json());
 app.use("/users", (req, res, next) => {
   if (req.method === "POST") {
     return next();
@@ -45,15 +43,23 @@ app.use("/groups", authenticateToken);
 app.use("/group-members", authenticateToken);
 
 //Creates a new user
-app.post('/users', async (req, res) => {
-  const { firstName, lastName, email, password, school_level, disability, bio, interests } = req.body;
+app.post("/users", async (req, res) => {
+  const {
+    firstName,
+    lastName,
+    email,
+    password,
+    school_level,
+    disability,
+    bio,
+    interests,
+  } = req.body;
 
   if (!firstName?.trim() || !lastName?.trim() || !email?.trim() || !password?.trim()) {
     return res.status(400).json({ error: "Missing required fields" });
   }
-  
+
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  
   if (!emailRegex.test(email)) {
     return res.status(400).json({ error: "Invalid email" });
   }
@@ -62,18 +68,21 @@ app.post('/users', async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const formattedInterests = interests
-    ? interests.split(',').map(i => i.trim().toLowerCase()).join(',')
-    : null;
+      ? interests.split(",").map(i => i.trim().toLowerCase()).join(",")
+      : null;
 
     const sql = `
-      insert into users (firstName, lastName, email, password, school_level, disability, bio, interests)
+      insert into users 
+      (firstName, lastName, email, password, school_level, disability, bio, interests)
       values (?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
-    db.run(sql, [firstName, lastName, email, hashedPassword, school_level, disability, bio, formattedInterests],
+    db.run(
+      sql,
+      [firstName, lastName, email, hashedPassword, school_level, disability, bio, formattedInterests],
       function (err) {
         if (err) {
-          if (err.message.includes("unique")) {
+          if (err.message.includes("UNIQUE")) {
             return res.status(400).json({ error: "Email already exists" });
           }
           return res.status(500).json({ error: err.message });
@@ -81,28 +90,32 @@ app.post('/users', async (req, res) => {
 
         res.json({
           status: "success",
-          data: { id: this.lastID, firstName, lastName, email, interests }
+          data: {
+            id: this.lastID,
+            firstName,
+            lastName,
+            email,
+            interests: formattedInterests,
+          },
         });
       }
     );
-  } catch (err) {
+  }
+  
+  catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
 //Gets all users
-app.get('/users', authenticateToken, (req, res) => {
-  db.all(
-    `select id, firstName, lastName, email, school_level, disability, bio, interests, created_at from users`,
-    [],
-    (err, rows) => {
-      if (err) {
-        return res.status(500).json({ error: err.message });
-      }
-
-      res.json(rows);
+app.get("/users", authenticateToken, (req, res) => {
+  db.all("select * from users", [], (err, rows) => {
+    if (err) {
+      return res.status(500).json({ error: err.message });
     }
-  );
+
+    res.json(rows);
+  });
 });
 
 //Gets a single user
@@ -134,7 +147,7 @@ app.get("/me", authenticateToken, (req, res) => {
         return res.status(500).json({ error: err.message });
       }
 
-      res.json(row);
+      res.json({ user: row });
     }
   );
 });
@@ -198,11 +211,13 @@ app.delete('/users/me', authenticateToken, (req, res) => {
 });
 
 //Login
-app.post('/login', (req, res) => {
+app.post("/login", (req, res) => {
   const { email, password } = req.body;
 
   db.get("select * from users where email = ?", [email], async (err, user) => {
-    if (err) return res.status(500).json({ error: err.message });
+    if (err) {
+      return res.status(500).json({ error: err.message });
+    }
 
     if (!user) {
       return res.status(400).json({ error: "Invalid credentials" });
@@ -213,13 +228,14 @@ app.post('/login', (req, res) => {
       return res.status(400).json({ error: "Invalid credentials" });
     }
 
-    const token = jwt.sign(
-      { userId: user.id },
-      JWT_SECRET,
-      { expiresIn: "1h" }
-    );
+    const token = jwt.sign({ userId: user.id }, JWT_SECRET, {
+      expiresIn: "1h",
+    });
 
-    res.json({ token });
+    res.json({
+      token,
+      user: { id: user.id, email: user.email },
+    });
   });
 });
 
@@ -288,36 +304,43 @@ app.get('/users/search/:interest', authenticateToken, (req, res) => {
 });
 
 //Creates a post
-app.post('/posts', authenticateToken, (req, res) => {
-  const user_id = req.user.userId;
+app.post("/posts", authenticateToken, (req, res) => {
   const { content } = req.body;
+  const userId = req.user.userId;
 
-  if (!user_id || !content) {
-    return res.status(400).json({ error: "Missing fields" });
+  if (!content) {
+    return res.status(400).json({ error: "Missing content" });
   }
 
   db.run(
     "insert into posts (user_id, content) values (?, ?)",
-    [user_id, content],
+    [userId, content],
     function (err) {
       if (err) {
         return res.status(500).json({ error: err.message });
       }
 
-      res.json({ id: this.lastID, user_id, content });
+      res.json({ id: this.lastID, user_id: userId, content });
     }
   );
 });
 
 //Gets all posts
-app.get('/posts', authenticateToken, (req, res) => {
-  db.all("select * from posts", [], (err, rows) => {
-    if (err) {
-      return res.status(500).json({ error: err.message });
-    }
+app.get("/posts", authenticateToken, (req, res) => {
+  db.all(
+    `select posts.*, users.firstName, users.lastName
+     from posts
+     join users on posts.user_id = users.id
+     order by posts.created_at desc`,
+    [],
+    (err, rows) => {
+      if (err) {
+        return res.status(500).json({ error: err.message });
+      }
 
-    res.json(rows);
-  });
+      res.json(rows);
+    }
+  );
 });
 
 //Updates a post
@@ -413,7 +436,7 @@ app.delete('/posts/:id', authenticateToken, (req, res) => {
 });
 
 //Sends a message
-app.post('/messages', authenticateToken, (req, res) => {
+app.post("/messages", authenticateToken, (req, res) => {
   const sender_id = req.user.userId;
   const { receiver_id, message } = req.body;
 
@@ -425,19 +448,22 @@ app.post('/messages', authenticateToken, (req, res) => {
     "insert into messages (sender_id, receiver_id, message) values (?, ?, ?)",
     [sender_id, receiver_id, message],
     function (err) {
-      if (err) return res.status(500).json({ error: err.message });
+      if (err) {
+        return res.status(500).json({ error: err.message });
+      }
 
       res.json({ id: this.lastID });
     }
   );
 });
 
-//Gets messages between users
-app.get('/messages/:user1/:user2', authenticateToken, (req, res) => {
+//Gets messages between two users
+app.get("/messages/:user1/:user2", authenticateToken, (req, res) => {
+  const user1 = Number(req.params.user1);
+  const user2 = Number(req.params.user2);
   const currentUser = req.user.userId;
-  const { user1, user2 } = req.params;
 
-  if (currentUser != user1 && currentUser != user2) {
+  if (![user1, user2].includes(currentUser)) {
     return res.status(403).json({ error: "Forbidden" });
   }
 
@@ -560,7 +586,10 @@ app.post('/friendships', authenticateToken, (req, res) => {
 
 //Gets all friendships
 app.get('/friendships', authenticateToken, (req, res) => {
-  db.all("select * from friendships", [], (err, rows) => {
+  db.all(
+  `select * from friendships
+   where requester_id = ? or receiver_id = ?`,
+  [req.user.userId, req.user.userId], (err, rows) => {
     if (err) {
       return res.status(500).json({ error: err.message });
     }
@@ -662,13 +691,17 @@ app.post('/groups', authenticateToken, (req, res) => {
 
 //Gets all groups
 app.get('/groups', authenticateToken, (req, res) => {
-  db.all("select * from groups", [], (err, rows) => {
-    if (err) {
-      return res.status(500).json({ error: err.message });
-    }
+  db.all(
+    `select * from groups where is_private = 0`,
+    [],
+    (err, rows) => {
+      if (err) {
+        return res.status(500).json({ error: err.message });
+      }
 
-    res.json(rows);
-  });
+      res.json(rows);
+    }
+  );
 });
 
 //Updates a group
