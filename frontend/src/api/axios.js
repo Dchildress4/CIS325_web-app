@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL,
+  baseURL: import.meta.env.VITE_API_URL || "http://localhost:3000",
 });
 
 //Adds token
@@ -9,19 +9,20 @@ api.interceptors.request.use((config) => {
   const token = localStorage.getItem("token");
 
   if (token) {
+    config.headers = config.headers || {};
     config.headers.Authorization = `Bearer ${token}`;
   }
 
   return config;
 });
 
-//Handles authorization errors
+//Handles auth errors
 api.interceptors.response.use(
   (res) => res,
   (err) => {
     if (err.response?.status === 401) {
       localStorage.removeItem("token");
-      window.location.href = "/";
+      window.location.replace("/");
     }
 
     return Promise.reject(err);

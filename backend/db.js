@@ -1,21 +1,19 @@
-import sqlite3 from 'sqlite3';
+import sqlite3 from "sqlite3";
 
 sqlite3.verbose();
 
-const db = new sqlite3.Database('./database.db', (err) => {
+const db = new sqlite3.Database("./database.db", (err) => {
   if (err) {
     console.error(err.message);
     return;
   }
 
   console.log("Connected to SQLite database.");
-
-  db.run("PRAGMA foreign_keys = ON");
+  db.run("pragma foreign_keys = on");
 });
 
-//Users
 db.serialize(() => {
-
+  //Users
   db.run(`
     create table if not exists users (
       id integer primary key autoincrement,
@@ -35,9 +33,9 @@ db.serialize(() => {
   //Posts
   db.run(`
     create table if not exists posts (
-      id  integer primary key autoincrement,
-      user_id integer,
-      content text,
+      id integer primary key autoincrement,
+      user_id integer not null,
+      content text not null,
       created_at datetime default current_timestamp,
       updated_at datetime default current_timestamp,
       foreign key(user_id) references users(id) on delete cascade
@@ -48,9 +46,9 @@ db.serialize(() => {
   db.run(`
     create table if not exists messages (
       id integer primary key autoincrement,
-      sender_id integer,
-      receiver_id integer,
-      message text,
+      sender_id integer not null,
+      receiver_id integer not null,
+      message text not null,
       created_at datetime default current_timestamp,
       is_read integer default 0,
       foreign key(sender_id) references users(id) on delete cascade,
@@ -62,8 +60,8 @@ db.serialize(() => {
   db.run(`
     create table if not exists friendships (
       id integer primary key autoincrement,
-      requester_id integer,
-      receiver_id integer,
+      requester_id integer not null,
+      receiver_id integer not null,
       status text check(status in ('pending', 'accepted', 'blocked')) default 'pending',
       created_at datetime default current_timestamp,
       foreign key(requester_id) references users(id) on delete cascade,
@@ -76,16 +74,16 @@ db.serialize(() => {
   db.run(`
     create table if not exists groups (
       id integer primary key autoincrement,
-      name text,
+      name text not null,
       description text,
-      owner_id integer,
-      created_at datetime default current_timestamp,
+      owner_id integer not null,
       is_private integer default 0,
+      created_at datetime default current_timestamp,
       foreign key(owner_id) references users(id) on delete cascade
     )
   `);
-  
-  //Group members
+
+  //Group_members
   db.run(`
     create table if not exists group_members (
       id integer primary key autoincrement,

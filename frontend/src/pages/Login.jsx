@@ -9,11 +9,10 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
 
   const navigate = useNavigate();
-  
   useEffect(() => {
     const token = localStorage.getItem("token");
 
-    if (token) {
+    if (token && window.location.pathname === "/") {
       navigate("/home");
     }
   }, [navigate]);
@@ -31,6 +30,8 @@ export default function Login() {
       const res = await api.post("/login", { email, password });
 
       localStorage.setItem("token", res.data.token);
+      localStorage.setItem("userId", res.data.user.id);
+
       navigate("/home");
     }
     

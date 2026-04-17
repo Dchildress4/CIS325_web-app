@@ -41,6 +41,17 @@ export default function Register() {
     try {
       await api.post("/users", form);
 
+      setForm({
+        firstName: "",
+        lastName: "",
+        email: "",
+        password: "",
+        school_level: "",
+        disability: "",
+        bio: "",
+        interests: ""
+      });
+
       alert("User created successfully");
       navigate("/");
     }
@@ -59,15 +70,15 @@ export default function Register() {
       <h2>Register</h2>
 
       <form onSubmit={handleSubmit}>
-        <input name="firstName" placeholder="First Name" onChange={handleChange} />
-        <input name="lastName" placeholder="Last Name" onChange={handleChange} />
-        <input name="email" placeholder="Email" onChange={handleChange} />
-        <input name="password" type="password" placeholder="Password" onChange={handleChange} />
+        <input name="firstName" value={form.firstName} placeholder="First Name" onChange={handleChange} />
+        <input name="lastName" value={form.lastName} placeholder="Last Name" onChange={handleChange} />
+        <input name="email" value={form.email} placeholder="Email" onChange={handleChange} />
+        <input name="password" value={form.password} type="password" placeholder="Password" onChange={handleChange} />
 
-        <input name="school_level" placeholder="School Level" onChange={handleChange} />
-        <input name="disability" placeholder="Disability" onChange={handleChange} />
-        <input name="bio" placeholder="Bio" onChange={handleChange} />
-        <input name="interests" placeholder="Interests" onChange={handleChange} />
+        <input name="school_level" value={form.school_level} placeholder="School Level" onChange={handleChange} />
+        <input name="disability" value={form.disability} placeholder="Disability" onChange={handleChange} />
+        <input name="bio" value={form.bio} placeholder="Bio" onChange={handleChange} />
+        <input name="interests" value={form.interests} placeholder="Interests" onChange={handleChange} />
 
         <button type="submit" disabled={loading}>
           {loading ? "Creating account..." : "Submit"}

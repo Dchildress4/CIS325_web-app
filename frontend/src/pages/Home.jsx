@@ -12,19 +12,27 @@ export default function Home() {
   };
 
   useEffect(() => {
-    const fetchUsers = async () => {
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      navigate("/");
+      return;
+    }
+
+    const fetchUser = async () => {
       try {
         const res = await api.get("/me");
-        setUser(res.data[0]); // temporary demo user
+        setUser(res.data.user);
       }
       
       catch (err) {
         console.log(err);
+        navigate("/");
       }
     };
 
-    fetchUsers();
-  }, []);
+    fetchUser();
+  }, [navigate]);
 
   return (
     <div style={{ padding: "20px" }}>
