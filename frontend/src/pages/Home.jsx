@@ -1,15 +1,12 @@
 import { useEffect, useState } from "react";
 import api from "../api/axios";
 import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
 
 export default function Home() {
   const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
-
-  const logout = () => {
-    localStorage.removeItem("token");
-    navigate("/");
-  };
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -25,43 +22,53 @@ export default function Home() {
         setUser(res.data.user);
       }
       
-      catch (err) {
-        console.log(err);
+      catch {
+        toast.error("Session expired. Please login again.");
+        localStorage.removeItem("token");
+        localStorage.removeItem("userId");
         navigate("/");
+      }
+      
+      finally {
+        setLoading(false);
       }
     };
 
     fetchUser();
   }, [navigate]);
 
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-paper">
+        <p className="text-gray-500 animate-pulse">
+          Loading your dashboard...
+        </p>
+      </div>
+    );
+  }
+
   return (
-    <div style={{ padding: "20px" }}>
-      <h1>Home page</h1>
+    <div className="min-h-screen flex flex-col items-center pt-16 bg-paper text-center">
+      <h1 className="text-3xl font-bold text-gray-800">
+        Home Page
+      </h1>
 
       {user && (
-        <div>
-          <h2>Welcome, {user.firstName}</h2>
-          <p>Email: {user.email}</p>
-          <p>Bio: {user.bio}</p>
+        <div className="bg-white mt-6 p-6 rounded-lg shadow-md w-full max-w-md text-left">
+          <h2 className="text-xl font-semibold text-blue-600 mb-4">
+            Welcome, {user.firstName}
+          </h2>
+
+          <p className="mb-2">
+            <strong>Email:</strong> {user.email}
+          </p>
+
+          <p>
+            <strong>Bio:</strong>{" "}
+            {user.bio || "No bio provided"}
+          </p>
         </div>
       )}
-
-      <hr />
-
-      <button onClick={() => navigate("/posts")}>Posts</button>
-      <button onClick={() => navigate("/messages")}>Messages</button>
-      <button onClick={() => navigate("/friends")}>Friends</button>
-      <button onClick={() => navigate("/groups")}>Groups</button>
-
-      <br /><br />
-
-      <button onClick={() => navigate("/change-password")}>
-        Change Password
-      </button>
-
-      <button onClick={logout} style={{ marginLeft: "10px" }}>
-        Logout
-      </button>
     </div>
   );
 }
